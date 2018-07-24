@@ -5,16 +5,20 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 
 namespace AggregateGDPPopulation
 {
     public class AggregatePopulationGDP
     {
-        public void CalculateAggregate()
+        public async Task CalculateAggregate()
         {
-            string[] line = File.ReadAllLines("../../../../AggregateGDPPopulation/data/datafile.csv");
-            JObject readCCMap = JObject.Parse(File.ReadAllText("../../../../AggregateGDPPopulation/data/country-continent-map.json", Encoding.UTF8));
-            Dictionary<string, string> CCDict = readCCMap.ToObject<Dictionary<string, string>>();
+            Task<string> linetask = ReadFileAsync("../../../../AggregateGDPPopulation/data/datafile.csv");
+            Task<string> maptask = ReadFileAsync("../../../../AggregateGDPPopulation/data/country-continent-map.json");
+            string line1 = await linetask;
+            string readCCMap = await maptask;
+            string[] line = line1.Split('\n');
+            Dictionary<string, string> CCDict = JsonConvert.DeserializeObject<Dictionary<string, string>>(readCCMap);
             Dictionary<string, GDPPopClass> ContGDPPop = new Dictionary<string, GDPPopClass>();
             string[] header = line[0].Replace("\"", "").Split(',');
             int CountryIndex = Array.IndexOf(header, "Country Name");
@@ -26,7 +30,11 @@ namespace AggregateGDPPopulation
                 string[] SplitByComma = item.Replace("\"", "").Split(',');
                 GDPPopClass temp = new GDPPopClass();
 
-                if (SplitByComma[CountryIndex] != "European Union")
+                if (SplitByComma[CountryIndex] == "European Union")
+                {
+                    break;
+                }
+                else
                 {
                     if (ContGDPPop.ContainsKey(CCDict[SplitByComma[CountryIndex]]))
                     {
@@ -41,8 +49,27 @@ namespace AggregateGDPPopulation
                     }
                 }
             }
-            var JSONOutput = Newtonsoft.Json.JsonConvert.SerializeObject(ContGDPPop);
-            File.WriteAllText("../../../../AggregateGDPPopulation/data/output.json", JSONOutput);
+            var JSONOutput = Newtonsoft.Json.JsonConvert.SerializeObject(ContGDPPop, Formatting.Indented);
+            WriteFileAsync("../../../../AggregateGDPPopulation/output/output.json", JSONOutput);
+        }
+
+
+        public async Task<string> ReadFileAsync(string filepath)
+        {
+            string data;
+            using (StreamReader sr = new StreamReader(filepath))
+            {
+                data = await sr.ReadToEndAsync();
+            }
+            return data;
+        }
+
+        public async void WriteFileAsync(string filepath, string JSONOutput)
+        {
+            using (StreamWriter sw = new StreamWriter(filepath))
+            {
+                await sw.WriteAsync(JSONOutput);
+            }
         }
     }
 

@@ -4,19 +4,22 @@ using Newtonsoft.Json.Linq;
 using System.IO;
 using AggregateGDPPopulation;
 
+
 namespace AggregateGDPPopulation.Tests
 {
     public class GDP_Population_Aggregate
     {
         [Fact]
-        public void Aggregate_Testcase()
+        public async void Aggregate_Testcase()
         {
             AggregatePopulationGDP aggregate = new AggregatePopulationGDP();
-            aggregate.CalculateAggregate();
-            var actual1 = File.ReadAllText("../../../../AggregateGDPPopulation/data/output.json");
-            var expected1 = File.ReadAllText("../../../expected-output.json");
-            JObject actual = JObject.Parse(actual1);
-            JObject expected = JObject.Parse(expected1);
+            await aggregate.CalculateAggregate();
+            var actual2 = await aggregate.ReadFileAsync("../../../../AggregateGDPPopulation/data/output.json");
+            var expected2 = await aggregate.ReadFileAsync("../../../expected-output.json");
+            //var actual1 = await actual2;
+            //var expected1 = await expected2;
+            JObject actual = JObject.Parse(actual2);
+            JObject expected = JObject.Parse(expected2);
             Assert.Equal(expected, actual);
         }
     }
